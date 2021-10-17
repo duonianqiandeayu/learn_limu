@@ -1,10 +1,10 @@
 import torch
 from torch import nn
-from d2l import torch as d2l
+from myd2l import reshape
+from myd2l import evaluat_accuracy_gpu
+from myd2l import load_data_fashion_mnist
+from myd2l import train_ch6_2
 
-class reshape(torch.nn.Module):
-    def forward(self,x):
-        return x.view(-1, 1, 28, 28)
 
 
 net = torch.nn.Sequential(
@@ -22,23 +22,12 @@ net = torch.nn.Sequential(
 # for layer in net:
 #     X = layer(X)
 #     print(layer.__class__.__name__, 'output shape:\t', X.shape)
-batch_size = 256
-train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size=batch_size)
+batch_size = 512
+train_iter, test_iter = load_data_fashion_mnist(batch_size=batch_size)
 
 
-def evaluat_accuracy_gpu(net, data_iter, device=None):
-    '''使用GPU计算模型在数据集上得精度'''
-    if isinstance(net, torch.nn.Module):
-        net.eval()
-        if not device:
-            device = next(iter(net.parameters())).device
-    metric = d2l.Accumulator(2)
-    for X, y in data_iter:
-        if isinstance(X, list):
-            X = [x.to(device) for x in X]
-        else:
-            X = X.to(device)
-        y = y.to(device)
-        metric.add(d2l.accuracy(net(X), y), y.numel())
-    return metric[0]/metric[1]
+device = torch.device("cuda")
+lr, num_epochs = 0.9, 20
+print(device)
+train_ch6_2(net, train_iter,test_iter,num_epochs,lr,device)
 
