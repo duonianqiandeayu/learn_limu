@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.utils.tensorboard
 import tensorboardX
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 
 """根据宽度、深度、激活函数的不同，控制变量设置了八个网络，4层和6层网络，每个分两种宽度，每个网络设置两种激活函数，共八个网络"""
 
@@ -76,7 +76,7 @@ class NetSigmoid4Slim(nn.Module):
             nn.Linear(1, 20), nn.Sigmoid(),
             nn.Linear(20, 50), nn.Sigmoid(),
             nn.Linear(50, 20), nn.Sigmoid(),
-            nn.Linear(20, 1), nn.Sigmoid(),
+            nn.Linear(20, 1)
         )
 
     def forward(self, X):
@@ -92,7 +92,7 @@ class NetSigmoid6Slim(nn.Module):
             nn.Linear(50, 100), nn.Sigmoid(),
             nn.Linear(100, 50), nn.Sigmoid(),
             nn.Linear(50, 20), nn.Sigmoid(),
-            nn.Linear(20, 1), nn.Sigmoid(),
+            nn.Linear(20, 1)
         )
 
     def forward(self, X):
@@ -106,7 +106,7 @@ class NetSigmoid4Fat(nn.Module):
             nn.Linear(1, 40), nn.Sigmoid(),
             nn.Linear(40, 100), nn.Sigmoid(),
             nn.Linear(100, 40), nn.Sigmoid(),
-            nn.Linear(40, 1), nn.Sigmoid(),
+            nn.Linear(40, 1)
         )
 
     def forward(self, X):
@@ -122,7 +122,7 @@ class NetSigmoid6Fat(nn.Module):
             nn.Linear(100, 200), nn.Sigmoid(),
             nn.Linear(200, 100), nn.Sigmoid(),
             nn.Linear(100, 40), nn.Sigmoid(),
-            nn.Linear(40, 1), nn.Sigmoid(),
+            nn.Linear(40, 1)
         )
 
     def forward(self, X):
@@ -169,7 +169,7 @@ def weight_init(m):
 
 if __name__ == "__main__":
     writer = SummaryWriter('./path/to/log')
-    lr, num_epochs, batch_size = 0.005, 200, 1000
+    lr, num_epochs, batch_size = 0.005, 600, 1000  #设置参数
     x_data, y_data = data_load(10000)
 
     db = torch.utils.data.TensorDataset(torch.tensor(x_data, dtype=torch.float),
@@ -186,9 +186,18 @@ if __name__ == "__main__":
         device = torch.device("cpu")
     print(device)
 
-    net = NetRelu4Slim().to(device)  # 模型选择
-    # net.apply(weight_init)
+    # 模型选择
+    # net = NetRelu4Slim().to(device)
+    # net = NetRelu6Slim().to(device)
+    # net = NetRelu4Fat().to(device)
+    # net = NetRelu6Fat().to(device)
+    # net = NetSigmoid6Fat().to(device)
+    # net = NetSigmoid4Fat().to(device)
+    # net = NetSigmoid4Slim().to(device)
+    net = NetSigmoid6Slim().to(device)
 
+
+    net.apply(weight_init)
     loss = nn.MSELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 
@@ -204,15 +213,15 @@ if __name__ == "__main__":
             optimizer.step()
 
         print('epoch: ', epoch + 1, 'train loss: ', l.item())
-        writer.add_scalar('loss/train_loss', l.item(), epoch + 1)
+        writer.add_scalar(net.__class__.__name__+' lr='+str(lr)+'/train_loss', l.item(), epoch + 1)
         with torch.no_grad():
             test_loss = evaluate_accuracy(net, test_iter, 2000)
-            writer.add_scalar('loss/test_loss', l.item(), epoch + 1)
+            writer.add_scalar(net.__class__.__name__+' lr '+str(lr)+'/test_loss', l.item(), epoch + 1)
             print('epoch: ', epoch + 1, 'test loss: ', test_loss)
 
     net.cpu()
     net.eval()
-    x = np.linspace(0, 4 * np.pi, 1000)
+    x = np.linspace(0, 4 * np.pi, 2000)
     y1 = np.sin(x)
     X = np.expand_dims(x, axis=1)
     Y = net(torch.tensor(X, dtype=torch.float))
@@ -222,5 +231,5 @@ if __name__ == "__main__":
     plt.xlabel('x')
     plt.ylabel('sin(x)')
     plt.legend()
-    plt.savefig(fname='fit.png')
+    plt.savefig(fname=net.__class__.__name__+'lr'+str(lr)+'.png')
     plt.show()
